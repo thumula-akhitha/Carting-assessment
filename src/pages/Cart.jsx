@@ -10,6 +10,7 @@ const Cart = () => {
   const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
   const [loading, setLoading] = useState(false)
+  const [showModal, setShowModal] = useState(false)
 
   const orderNow = async () => {
     try {
@@ -33,6 +34,35 @@ const Cart = () => {
       toast.error('Order failed: ' + error.message);
     } finally {
       setLoading(false)
+    }
+  }
+
+  const buyAll = async () => {
+    try {
+      setLoading(true)
+      // For assessment: This calls a separate /buyall endpoint for just an purchase (no payment).
+      // To use Stripe payment instead, replace with: fetch(`${import.meta.env.VITE_SERVER_URL}/api/cart/checkout`, { ... same as orderNow })
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/cart/buyall`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+        body: JSON.stringify({ items, totalPrice })
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Order successful!')
+        window.location.href = '/success'
+      } else {
+        toast.error('Order failed: ' + data.message);
+      }
+    } catch (error) {
+      toast.error('Order failed: ' + error.message);
+    } finally {
+      setLoading(false)
+      setShowModal(false)
     }
   }
 
@@ -126,6 +156,16 @@ const Cart = () => {
                     </span>
                   </div>
                 </div>
+                <button
+                  className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-300 shadow-lg hover:shadow-xl mb-4 ${items.length === 0 || loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white'
+                    }`}
+                  onClick={() => setShowModal(true)}
+                  disabled={items.length === 0 || loading}
+                >
+                  Buy All
+                </button>
 
                 {/* Checkout Button */}
                 <button
@@ -160,6 +200,32 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='bg-white p-8 rounded-2xl shadow-xl max-w-md mx-4'>
+            <h2 className='text-2xl font-bold mb-4'>Confirm Purchase</h2>
+            <p className='text-gray-600 mb-4'>Total Price: <span className='font-bold text-green-600'>${totalPrice.toFixed(2)}</span></p>
+            <p className='text-sm text-gray-500 mb-6'>Note: This confirms your order without payment. For Stripe payment, use the "Secure Checkout" button below.</p>
+            <div className='flex gap-4'>
+              <button
+                className={`flex-1 py-3 px-6 rounded-xl font-bold transition-colors ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                onClick={buyAll}
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : 'Yes'}
+              </button>
+              <button
+                className='flex-1 bg-red-500 text-white py-3 px-6 rounded-xl font-bold hover:bg-red-600 transition-colors'
+                onClick={() => setShowModal(false)}
+                disabled={loading}
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

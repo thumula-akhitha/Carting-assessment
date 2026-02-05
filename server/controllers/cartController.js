@@ -195,7 +195,7 @@ const checkOut = async (req, res) => {
               product_data: {
                 name: item.title,
               },
-              unit_amount: item.price * 100, 
+              unit_amount: Math.round(item.price * 100), 
             },
             quantity: item.quantity,
           };
@@ -205,6 +205,41 @@ const checkOut = async (req, res) => {
       });
   
       res.status(200).json({ success: true, url: session.url });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
+  const buyAll = async (req, res) => {
+    try {
+      const userId = req.id;
+      const { items, totalPrice } = req.body;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "You are not authorized."
+        });
+      }
+      const totalItemsPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
+      if (Math.abs(totalItemsPrice - totalPrice) > 0.01) {
+        return res.status(400).json({
+          success: false,
+          message: "Total price mismatch."
+        });
+      }
+
+      user.cart = [];
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Purchase successful!"
+      });
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -248,5 +283,6 @@ module.exports = {
     incrementQuantity,
     decrementQuantity,
     checkOut,
+    buyAll,
     clearCart
 }
