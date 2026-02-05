@@ -45,7 +45,7 @@ const Cart = () => {
       const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/cart/buyall`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         credentials: 'include',
         body: JSON.stringify({ items, totalPrice })
@@ -53,8 +53,9 @@ const Cart = () => {
 
       const data = await res.json()
       if (data.success) {
-        toast.success('Order successful!')
-        window.location.href = '/success'
+        toast.success('Order placed successfully!')
+         window.location.href = '/success';
+        //  window.location.href = data.url;
       } else {
         toast.error('Order failed: ' + data.message);
       }
